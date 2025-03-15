@@ -74,4 +74,37 @@ public class SwiftWatchConnectivityPlugin: NSObject, FlutterPlugin, WCSessionDel
       self.channel.invokeMethod("didReceiveApplicationContext", arguments: applicationContext)
     }
   }
+  public func session(_ session: WCSession, didReceive file: WCSessionFile) {
+    // In thông tin file để kiểm tra
+    print("Đã nhận file từ Apple Watch!")
+    print("File URL: \(file.fileURL.path)")
+    print("Metadata: \(file.metadata ?? [:])")
+    
+    // Lưu file vào thư mục Record trong Documents của ứng dụng
+    do {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let recordDirectory = documentsDirectory.appendingPathComponent("Record")
+        
+        // Tạo thư mục Record nếu chưa tồn tại
+        if !FileManager.default.fileExists(atPath: recordDirectory.path) {
+            try FileManager.default.createDirectory(at: recordDirectory, withIntermediateDirectories: true)
+            print("Đã tạo thư mục Record tại: \(recordDirectory.path)")
+        }
+        
+        let fileName = file.fileURL.lastPathComponent
+        let destinationURL = recordDirectory.appendingPathComponent(fileName)
+        
+        // Kiểm tra nếu file đã tồn tại thì xóa trước
+        if FileManager.default.fileExists(atPath: destinationURL.path) {
+            try FileManager.default.removeItem(at: destinationURL)
+        }
+        
+        // Sao chép file từ vị trí tạm thời vào thư mục Record
+        try FileManager.default.copyItem(at: file.fileURL, to: destinationURL)
+        
+        print("Đã lưu file vào: \(destinationURL.path)")
+    } catch {
+        print("Lỗi khi lưu file: \(error.localizedDescription)")
+    }
+  }
 }
